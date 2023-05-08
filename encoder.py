@@ -33,7 +33,7 @@ class ConvEncoder(nn.Module):
             in_channels = num_filters_list[i_layer]
             self.model.append(nn.BatchNorm2d(num_filters_list[i_layer]))
             self.model.append(nn.RReLU())
-            self.model.append(nn.Flatten())
+        self.model.append(nn.Flatten())
 
     def forward(self,input_image):
         return self.model(input_image)
