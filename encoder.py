@@ -14,8 +14,10 @@ class ConvEncoder(nn.Module):
         '''
         Arguments:
             in_channels: number of channels of an image
+            num_filters_list: a list of ints for the number of filters of each conv2d layer
             filter_size_list: a list of ints or tuples for the filters size of each conv2d layer
-            stride_list: a 
+            stride_list: a list of ints or tuples for the stride size of each conv2d layer
+            padding_list: a list of ints or tuples for the stride size of each conv2d layer
         '''
         super(ConvEncoder,self).__init__()
         assert  len(num_filters_list) ==\

@@ -2,7 +2,10 @@ import torch
 import torch.nn as nn
 
 
-
+def expand_dims(tensor:torch.Tensor):
+    if tensor.ndim ==1: tensor = tensor[None, :, None]
+    elif tensor.ndim==2: tensor = tensor[:, :, None]
+    return tensor
 
 class ActCondLSTM(nn.Module):
     def __init__(self, 
@@ -22,30 +25,30 @@ class ActCondLSTM(nn.Module):
         self.bias = bias
 
         # Action fusion parameters
-        self.Wh = torch.FloatTensor(fusion_size,hidden_size).uniform_(-1/hidden_size,1/hidden_size).requires_grad(True)
-        self.Wa = torch.FloatTensor(fusion_size,action_dim).uniform_(-1/hidden_size,1/hidden_size).requires_grad(True)
+        self.Wh = torch.FloatTensor(fusion_size,hidden_size).uniform_(-1/hidden_size,1/hidden_size).requires_grad_(True)
+        self.Wa = torch.FloatTensor(fusion_size,action_dim).uniform_(-1/hidden_size,1/hidden_size).requires_grad_(True)
         
         # Gate Update parameters
-        self.Wiv= torch.FloatTensor(hidden_size,fusion_size).uniform_(-1/hidden_size,1/hidden_size).requires_grad(True)
-        self.Wiz= torch.FloatTensor(hidden_size,input_size).uniform_(-1/hidden_size,1/hidden_size).requires_grad(True)
+        self.Wiv= torch.FloatTensor(hidden_size,fusion_size).uniform_(-1/hidden_size,1/hidden_size).requires_grad_(True)
+        self.Wiz= torch.FloatTensor(hidden_size,input_size).uniform_(-1/hidden_size,1/hidden_size).requires_grad_(True)
         if bias:
-            self.bi = torch.FloatTensor(hidden_size).uniform_(-1/hidden_size,1/hidden_size).requires_grad(True)
+            self.bi = torch.FloatTensor(hidden_size,1).uniform_(-1/hidden_size,1/hidden_size).requires_grad_(True)
         
-        self.Wfv= torch.FloatTensor(hidden_size,fusion_size).uniform_(-1/hidden_size,1/hidden_size).requires_grad(True)
-        self.Wfz= torch.FloatTensor(hidden_size,input_size).uniform_(-1/hidden_size,1/hidden_size).requires_grad(True)
+        self.Wfv= torch.FloatTensor(hidden_size,fusion_size).uniform_(-1/hidden_size,1/hidden_size).requires_grad_(True)
+        self.Wfz= torch.FloatTensor(hidden_size,input_size).uniform_(-1/hidden_size,1/hidden_size).requires_grad_(True)
         if bias:
-            self.bf = torch.FloatTensor(hidden_size).uniform_(-1/hidden_size,1/hidden_size).requires_grad(True)
+            self.bf = torch.FloatTensor(hidden_size,1).uniform_(-1/hidden_size,1/hidden_size).requires_grad_(True)
         
-        self.Wov= torch.FloatTensor(hidden_size,fusion_size).uniform_(-1/hidden_size,1/hidden_size).requires_grad(True)
-        self.Woz= torch.FloatTensor(hidden_size,input_size).uniform_(-1/hidden_size,1/hidden_size).requires_grad(True)
+        self.Wov= torch.FloatTensor(hidden_size,fusion_size).uniform_(-1/hidden_size,1/hidden_size).requires_grad_(True)
+        self.Woz= torch.FloatTensor(hidden_size,input_size).uniform_(-1/hidden_size,1/hidden_size).requires_grad_(True)
         if bias:
-            self.bo = torch.FloatTensor(hidden_size).uniform_(-1/hidden_size,1/hidden_size).requires_grad(True)
+            self.bo = torch.FloatTensor(hidden_size,1).uniform_(-1/hidden_size,1/hidden_size).requires_grad_(True)
         
         # Cell update parameters
-        self.Wcv= torch.FloatTensor(hidden_size,fusion_size).uniform_(-1/hidden_size,1/hidden_size).requires_grad(True)
-        self.Wcz= torch.FloatTensor(hidden_size,input_size).uniform_(-1/hidden_size,1/hidden_size).requires_grad(True)
+        self.Wcv= torch.FloatTensor(hidden_size,fusion_size).uniform_(-1/hidden_size,1/hidden_size).requires_grad_(True)
+        self.Wcz= torch.FloatTensor(hidden_size,input_size).uniform_(-1/hidden_size,1/hidden_size).requires_grad_(True)
         if bias:
-            self.bc = torch.FloatTensor(hidden_size).uniform_(-1/hidden_size,1/hidden_size).requires_grad(True)
+            self.bc = torch.FloatTensor(hidden_size,1).uniform_(-1/hidden_size,1/hidden_size).requires_grad_(True)
         
 
     def forward(self, x , a , h , c):
@@ -59,6 +62,7 @@ class ActCondLSTM(nn.Module):
             new_hidden_state: output hidden state of the LSTM
             new_cell_output: output cell value of the LSTM
         '''
+        x , a , h , c = map(expand_dims,[x , a , h , c]) # we need an extra dimension at the end of vectors
         # Action fusion
         fusioned = torch.mul(torch.matmul(self.Wh , h),torch.matmul(self.Wa, a))
 
@@ -79,6 +83,5 @@ class ActCondLSTM(nn.Module):
                                                             torch.matmul(self.Wcz,x)+\
                                                             (self.bc if self.bias else 0))
         new_hidden_state = new_output_gate * nn.functional.tanh(new_cell_output)
-
-        return new_hidden_state , new_cell_output
+        return new_hidden_state.squeeze(-1) , new_cell_output.squeeze(-1) # we have to drop the last dimension
         

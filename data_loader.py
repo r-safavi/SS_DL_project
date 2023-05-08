@@ -59,14 +59,23 @@ class PongDataLoader():
         
 
     def get_data(self,num_sequences=16,sequence_length=15):
-        state_sequences = np.zeros([num_sequences,sequence_length,self.first_dim,self.second_dim])
-        action_sequences = np.zeros([num_sequences,sequence_length])
+        '''
+        Will return an array of size (num_sequences,sequence_length+1,self.first_dim,self.second_dim)
+        '''
+        state_sequences = np.zeros([num_sequences,sequence_length+1,self.first_dim,self.second_dim])
+        action_sequences = np.zeros([num_sequences,sequence_length+1])
         randomly_chosen_episodes = np.random.choice(self.episode_list,size=num_sequences,replace=True)
         for k,episode in enumerate(randomly_chosen_episodes):
-            randomly_chosen_step = np.random.choice(self.step_list[sequence_length:],1)
-            for i in np.arange(sequence_length-1,0,-1):
+            randomly_chosen_step = np.random.choice(self.step_list[sequence_length+1:],1)
+            for i in np.arange(sequence_length,0,-1):
                 state_file_name = 'ep%05dstep%05d_state'%(episode,randomly_chosen_step-i)
                 state_sequences[k,i,:,:] = self.numpy_files[state_file_name]
                 action_file_name = 'ep%05dstep%05d_action'%(episode,randomly_chosen_step-i)
                 action_sequences[k,i] = self.numpy_files[action_file_name]
+        # Actions 0 and 1 are equivalent
+        # Actions 2 and 4 are equivalent
+        # Actions 3 and 5 are equivalent
+        action_sequences[action_sequences==1] = 0
+        action_sequences[(action_sequences==2)|(action_sequences==4)] = 1
+        action_sequences[(action_sequences==3)|(action_sequences==5)] = 2
         return state_sequences,action_sequences
