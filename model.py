@@ -53,5 +53,5 @@ class RecEnvSimModel(nn.Module):
         h, c = hc
         encoded = self.encoder(x)
         new_h, new_c = self.lstm(encoded,a,h,c)
-        decoded = self.decoder(new_h)
+        decoded = self.decoder(torch.cat([new_h,new_c],dim=-1))
         return decoded, (new_h, new_c)
